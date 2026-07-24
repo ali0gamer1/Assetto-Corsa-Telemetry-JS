@@ -1,4 +1,4 @@
-from pycparser import c_parser, c_ast
+from pycparser import c_parser, c_ast,parse_file
 from functools import reduce
 
 #TODO: handle user created types and struct in structs
@@ -91,9 +91,7 @@ class StructVisitor(c_ast.NodeVisitor):
                 field_type = self._get_type(field.type)
                                 
                 self.fieldsMetadata[field_name] = {"typedata":field_type,
-                                                   "offset": offset
-                                   
-                                                   }
+                                                   "offset": offset}
                 
                 nextOffset += field_type.getTotalSize()
                 offset = nextOffset
@@ -137,6 +135,15 @@ class StructVisitor(c_ast.NodeVisitor):
 parser = c_parser.CParser()
 visitor = StructVisitor()
 
-tree = parser.parse(read_C_file('./AcPhysics.h'))
+fake_include_path = r'.\utils\fake_libc_include'
 
-visitor.visit(tree)
+ast = parse_file(
+    'AcPhysics.h',
+    use_cpp=True,
+    cpp_path=r'cpp', 
+    cpp_args=[
+        '-E',  
+        '-nostdinc',  
+        f'-I{fake_include_path}'  
+    ]) # type: ignore
+visitor.visit(ast)
