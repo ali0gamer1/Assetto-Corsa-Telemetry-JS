@@ -1,39 +1,43 @@
 from pycparser import c_parser, c_ast
-
-
-
-def DEBUG_PRINT(msg):
-    print(f"DEBUG: {type(msg)}: {msg}")
-    
-ARRAY_DIM_DELIMETER = "." #Delimeter to separate the dimensions in the parser
+from functools import reduce
 
 #TODO: handle user created types and struct in structs
 class BaseTypeClass: #Or primitive
     
-    def __init__(self, name) -> None:
+    def __init__(self, name = "", basesize = 0) -> None:
         
+        self.basesize = basesize
         self.name = name
 
-    
-    def __repr__(self) -> str:
-        
+    def getTotalSize(self):
+        return self.basesize
+
+    def __str__(self) -> str:
         return self.name
     
-
+    def __repr__(self) -> str:
+        return self.name
+        
 
 
 class ArrayType(BaseTypeClass):
     
-    def __init__(self, name, dims) -> None:
+    def __init__(self, dims) -> None:
         
-        super().__init__(name)
+        super().__init__()
 
         self.dims = dims
+        self.totalsize = 0
+        
     
+    def getTotalSize(self):
+            return self.totalsize
+    
+    def __repr__(self) -> str:
+            return f"{self.name}{self.getDimensions(self.dims)}"
+        
     def __str__(self) -> str:
         return f"{self.name}{self.getDimensions(self.dims)}"
-    
-    
     
 
     def getDimensions(self, dims):
@@ -50,7 +54,7 @@ def read_C_file(filename):
         return f.read()
 
 
-def getDataTypeSize(dataType):
+def getDataTypeSize(dataType)->int:
 
         type_sizes = {
             "char": 1,
@@ -61,13 +65,15 @@ def getDataTypeSize(dataType):
             "double": 8,
         }
         
-        return type_sizes.get(dataType, None) 
+        return type_sizes.get(dataType, -1) 
 
 
 
 
 
 class StructVisitor(c_ast.NodeVisitor):
+    
+    
     
     def visit_Struct(self, node):
         if node.decls is not None and isinstance(node, c_ast.Struct):
@@ -83,52 +89,49 @@ class StructVisitor(c_ast.NodeVisitor):
                 
                 field_name = field.name
                 field_type = self._get_type(field.type)
+                                
+                self.fieldsMetadata[field_name] = {"typedata":field_type,
+                                                   "offset": offset
+                                   
+                                                   }
                 
+                nextOffset += field_type.getTotalSize()
+                offset = nextOffset
+            print(self.fieldsMetadata)      
                 
-                print("===============")
-                
-                print(f"{field_name}, {field_type}")
-                
-                print("===============")
-                
-                self.fieldsMetadata[field_name] = {
-                    "size": getDataTypeSize
-                    
-                    }
-                
-                      
-                
-            pass
-
     
-    def _get_type(self, type_node, lastType = None):
+    def _get_type(self, type_node, lastType = None)->BaseTypeClass:
         
         if isinstance(type_node, c_ast.TypeDecl):
             return self._get_type(type_node.type, lastType)
-        elif isinstance(type_node, c_ast.IdentifierType):
-            if (lastType is not None):
-                # TODO: return an object instead of string
-                # return F"[]{ARRAY_DIM_DELIMETER}" + " ".join(type_node.names) + ARRAY_DIM_DELIMETER +\
-                # ARRAY_DIM_DELIMETER.join(lastType)
-                
-                return ArrayType(" ".join(type_node.names), lastType) 
-                
-                
-            return " ".join(type_node.names)
         
-        elif isinstance(type_node,c_ast.PtrDecl):
-            return f"{self._get_type(type_node.type, lastType)}*" #star at the end
-
+        elif isinstance(type_node, c_ast.IdentifierType):
+            
+            
+            if type(lastType) is ArrayType:
+                lastType.name = " ".join(type_node.names)
+                lastType.basesize = getDataTypeSize(lastType.name) # type: ignore
+                lastType.totalsize = lastType.basesize * reduce((lambda x,y: x + y ) , lastType.dims)
+                return lastType
+            
+            _name = " ".join(type_node.names)
+            return BaseTypeClass(name = _name, basesize = getDataTypeSize(_name))
+        
         elif isinstance(type_node,c_ast.ArrayDecl):
-            dim = f"{type_node.dim.value}"
-            if lastType is not None:
-                lastType.append(dim)
+
+            
+            dim = type_node.dim.value
+            
+            if isinstance(lastType, ArrayType):
+                lastType.dims.append(int(dim))
             else:
-                lastType = [dim]
+                lastType = ArrayType(dims = [int(dim)])
+            
+                
             return self._get_type(type_node.type, lastType=lastType)
 
         
-        return "unknown"
+        return BaseTypeClass()
         
 
 parser = c_parser.CParser()
