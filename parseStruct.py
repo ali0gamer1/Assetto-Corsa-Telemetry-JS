@@ -132,7 +132,6 @@ class StructVisitor(c_ast.NodeVisitor):
         return BaseTypeClass()
         
 
-parser = c_parser.CParser()
 visitor = StructVisitor()
 
 fake_include_path = r'.\utils\fake_libc_include'
