@@ -7,6 +7,43 @@ def DEBUG_PRINT(msg):
     
 ARRAY_DIM_DELIMETER = "." #Delimeter to separate the dimensions in the parser
 
+#TODO: handle user created types and struct in structs
+class BaseTypeClass: #Or primitive
+    
+    def __init__(self, name) -> None:
+        
+        self.name = name
+
+    
+    def __repr__(self) -> str:
+        
+        return self.name
+    
+
+
+
+class ArrayType(BaseTypeClass):
+    
+    def __init__(self, name, dims) -> None:
+        
+        super().__init__(name)
+
+        self.dims = dims
+    
+    def __str__(self) -> str:
+        return f"{self.name}{self.getDimensions(self.dims)}"
+    
+    
+    
+
+    def getDimensions(self, dims):
+        retVal = ""
+        for dim in dims:
+                retVal = retVal +  f"[{dim}]"
+        
+    
+        return retVal
+
 
 def read_C_file(filename):
     with open(filename, "r") as f:
@@ -47,8 +84,11 @@ class StructVisitor(c_ast.NodeVisitor):
                 field_name = field.name
                 field_type = self._get_type(field.type)
                 
+                
                 print("===============")
+                
                 print(f"{field_name}, {field_type}")
+                
                 print("===============")
                 
                 self.fieldsMetadata[field_name] = {
@@ -67,9 +107,12 @@ class StructVisitor(c_ast.NodeVisitor):
             return self._get_type(type_node.type, lastType)
         elif isinstance(type_node, c_ast.IdentifierType):
             if (lastType is not None):
-                #TODO: return an object instead of string
-                return F"[]{ARRAY_DIM_DELIMETER}" + " ".join(type_node.names) + ARRAY_DIM_DELIMETER +\
-                ARRAY_DIM_DELIMETER.join(lastType)
+                # TODO: return an object instead of string
+                # return F"[]{ARRAY_DIM_DELIMETER}" + " ".join(type_node.names) + ARRAY_DIM_DELIMETER +\
+                # ARRAY_DIM_DELIMETER.join(lastType)
+                
+                return ArrayType(" ".join(type_node.names), lastType) 
+                
                 
             return " ".join(type_node.names)
         
