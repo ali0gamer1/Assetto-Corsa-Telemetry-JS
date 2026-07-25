@@ -65,7 +65,25 @@ def getDataTypeSize(dataType)->int:
             "double": 8,
         }
         
-        return type_sizes.get(dataType, -1) 
+        # Return 0 for unknown types to match common parser defaults
+        return type_sizes.get(dataType, 0)
+
+
+def getTypeAlignment(dataType) -> int:
+    """Return alignment for a primitive/base type name.
+
+    Matches the C++ helper: unknown size -> alignment 1, otherwise min(size, 8).
+    """
+    size = getDataTypeSize(dataType)
+    if size == 0:
+        return 1
+    return 8 if size >= 8 else size
+
+
+def alignUp(value: int, alignment: int) -> int:
+    if alignment <= 1:
+        return value
+    return ((value + alignment - 1) // alignment) * alignment
 
 
 
@@ -80,22 +98,26 @@ class StructVisitor(c_ast.NodeVisitor):
             
             print(f"Found the struct: {node.name}")
             
-            offset = 0
-            nextOffset = 0
-            
+            current_offset = 0
             self.fieldsMetadata = dict()
-            
+
             for field in node.decls:
-                
                 field_name = field.name
                 field_type = self._get_type(field.type)
-                                
-                self.fieldsMetadata[field_name] = {"typedata":field_type,
-                                                   "offset": offset}
-                
-                nextOffset += field_type.getTotalSize()
-                offset = nextOffset
-            print(self.fieldsMetadata)      
+
+                # compute size and alignment
+                field_size = field_type.getTotalSize()
+                # If the type object has no name (very rare), treat alignment as 1
+                field_alignment = getTypeAlignment(getattr(field_type, 'name', ''))
+
+                field_offset = alignUp(current_offset, field_alignment)
+
+                self.fieldsMetadata[field_name] = {"typedata": field_type,
+                                                   "offset": field_offset}
+
+                current_offset = field_offset + field_size
+
+            print(self.fieldsMetadata)
                 
     
     def _get_type(self, type_node, lastType = None)->BaseTypeClass:
@@ -109,7 +131,7 @@ class StructVisitor(c_ast.NodeVisitor):
             if type(lastType) is ArrayType:
                 lastType.name = " ".join(type_node.names)
                 lastType.basesize = getDataTypeSize(lastType.name) # type: ignore
-                lastType.totalsize = lastType.basesize * reduce((lambda x,y: x + y ) , lastType.dims)
+                lastType.totalsize = lastType.basesize * reduce((lambda x,y: x * y ) , lastType.dims)
                 return lastType
             
             _name = " ".join(type_node.names)

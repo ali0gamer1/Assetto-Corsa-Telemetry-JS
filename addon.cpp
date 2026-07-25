@@ -33,9 +33,10 @@ unordered_map<string, vector<int>*> *makeStructHashMap()
 
     while (getline(fieldsFile, line))
     {
-
+        cout<<line<<endl;
     }
 
+    return nullptr;
 
 }
 
@@ -52,6 +53,7 @@ Napi::String GetValue(const Napi::CallbackInfo &args)
     }
 
     string pr = args[0].As<Napi::String>().ToString();
+    makeStructHashMap();
     return Napi::String::New(env, "");
 
 }
@@ -82,3 +84,5 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
 
     return exports;
 }
+
+NODE_API_MODULE(addon, Init)
