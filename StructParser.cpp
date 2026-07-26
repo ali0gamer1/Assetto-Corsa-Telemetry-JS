@@ -1,52 +1,4 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <numeric>
-#include <memory>
-#include <sstream>
-#include <cctype>
-#include "cppparser/cppparser.h"
-
-
-
-struct TypeInfo
-{
-    std::string name;
-    size_t baseSize = 0;
-    std::vector<size_t> dimensions;
-    
-    size_t getTotalSize() const
-    {
-        if (dimensions.empty())
-            return baseSize;
-        
-        
-        size_t totalElements = 1;
-        for (size_t dim : dimensions) {
-            totalElements *= dim;
-        }
-        return baseSize * totalElements;
-    }
-
-    std::string getTypeString() const 
-    {
-        std::string result = name;
-        for (size_t dim : dimensions) {
-            result += "[" + std::to_string(dim) + "]";
-        }
-        return result;
-    }
-
-};
-
-
-struct FieldMetadata {
-    TypeInfo typeData;
-    size_t offset = 0;
-};
-
-
+#include "StructParser.h"
 
 
 size_t getPrimitiveTypeSize(const std::string& typeName) {
@@ -139,11 +91,11 @@ void processStruct(const cppast::CppCompound &compoundSymbol)
 
     std::cout << "Found the struct: " << compoundSymbol.name() << "\n";
 
-    std::unordered_map<std::string, FieldMetadata> fieldsMetadata;
+    util.fieldMap.clear();
     size_t currentOffset = 0;
 
     compoundSymbol.visitAll(
-    [&](const cppast::CppEntity& entity) 
+    [&](const cppast::CppEntity& entity)
     {
         if (entity.entityType() != cppast::CppEntityType::VAR) {
             return true;
@@ -162,14 +114,14 @@ void processStruct(const cppast::CppCompound &compoundSymbol)
         size_t fieldOffset = alignUp(currentOffset, fieldAlignment);
 
         metadata.offset = fieldOffset;
-        fieldsMetadata[fieldName] = metadata;
+        util.fieldMap[fieldName] = metadata;
 
         currentOffset = fieldOffset + fieldSize;
         return true;
     });
 
     std::cout << "{\n";
-    for (const auto& [name, meta] : fieldsMetadata) {
+    for (const auto& [name, meta] : util.fieldMap) {
         std::cout << "  \"" << name << "\": { "
                   << "type: \"" << meta.typeData.getTypeString() << "\", "
                   << "size: " << meta.typeData.getTotalSize() << " bytes, "
@@ -196,19 +148,18 @@ void traverseAST(const cppast::CppCompound& program) {
 // Main Entry Point
 // -----------------------------------------------------------------------------
 
-int main(int argc, char** argv) {
-    std::string filename = (argc > 1) ? argv[1] : "AcPhysics.cpp";
-
+bool initParser(const std::string& filename)
+{
     cppparser::CppParser parser;
 
     std::unique_ptr<cppast::CppCompound> ast(parser.parseFile(filename.c_str()));
 
     if (!ast) {
         std::cerr << "Failed to parse file: " << filename << std::endl;
-        return 1;
+        return false;
     }
 
     traverseAST(*ast);
-
-    return 0;
+    return true;
 }
+

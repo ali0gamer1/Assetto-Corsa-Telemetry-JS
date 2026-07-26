@@ -5,45 +5,20 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <windows.h>
-#include <iostream>
-#include <unordered_map>
 #include "AcPhysics.h"
+#include "StructParser.h"
 #include "util.h"
-using namespace std;
 
-unordered_map<string, vector<int>*> *makeStructHashMap()
-{
-    ifstream fieldsFile("fields.txt");
+#define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 
-    stringstream ss;
-
-    if (!fieldsFile.is_open())
-    {
-        cerr << "Failed to open fields.txt" << endl;
-        return nullptr;
-    }
-
-    //split the line by comma and store the values in a vector
-    
-
-    unordered_map<string,vector<int>*> *theMap = new unordered_map<string,vector<int>*>();
-    vector<int> *fields;
-    string line;
-
-    while (getline(fieldsFile, line))
-    {
-        cout<<line<<endl;
-    }
-
-    return nullptr;
-
-}
 
 
 Napi::String GetValue(const Napi::CallbackInfo &args)
 {
-    //get the key and print the accordig value from the physics struct
     Napi::Env env = args.Env();
 
     if (args.Length() != 1)
@@ -52,10 +27,9 @@ Napi::String GetValue(const Napi::CallbackInfo &args)
         return Napi::String::New(env, "");
     }
 
-    string pr = args[0].As<Napi::String>().ToString();
-    makeStructHashMap();
-    return Napi::String::New(env, "");
+    initParser();
 
+    return args[0].ToString();
 }
 
 
