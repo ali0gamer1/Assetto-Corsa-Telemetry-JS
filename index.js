@@ -3,7 +3,7 @@ const addon = require("./build/Release/addon.node");
 (async function() {
     while(1){
 
-    console.log(addon.GetValue("wheelsPressure"));
+    console.log(addon.GetValue("static","acVersion"));
     
         await new Promise(r => setTimeout(r, 200));
     }

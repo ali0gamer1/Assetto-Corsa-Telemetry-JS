@@ -4,17 +4,27 @@
 size_t getPrimitiveTypeSize(const std::string& typeName) {
     static const std::unordered_map<std::string, size_t> typeSizes = {
         {"char", 1},
+        {"unsigned char", 1},
+        {"int8_t", 1},
+        {"uint8_t", 1},
         {"short", 2},
+        {"unsigned short", 2},
+        {"int16_t", 2},
+        {"uint16_t", 2},
+        {"wchar_t", 2},
         {"int", 4},
-        {"long", 8},
-        {"float", 4},
-        {"double", 8},
-        {"bool", 1},
         {"unsigned", 4},
         {"unsigned int", 4},
+        {"int32_t", 4},
+        {"uint32_t", 4},
+        {"float", 4},
+        {"long", 8},
         {"unsigned long", 8},
         {"long long", 8},
-        {"unsigned long long", 8}
+        {"unsigned long long", 8},
+        {"int64_t", 8},
+        {"uint64_t", 8},
+        {"double", 8}
     };
 
     auto it = typeSizes.find(typeName);
@@ -88,10 +98,16 @@ void processStruct(const cppast::CppCompound &compoundSymbol)
         return;
     }
 
+    const std::string structName = compoundSymbol.name();
+    StructFieldMap* fieldMap = nullptr;
+    if (structName == "SPageFilePhysics") {
+        fieldMap = &util.physicsFieldMap;
+    } else if (structName == "SPageFileStatic") {
+        fieldMap = &util.staticFieldMap;
+    } else {
+        return;
+    }
 
-    //std::cout << "Found the struct: " << compoundSymbol.name() << "\n";
-
-    util.fieldMap.clear();
     size_t currentOffset = 0;
 
     compoundSymbol.visitAll(
@@ -114,7 +130,7 @@ void processStruct(const cppast::CppCompound &compoundSymbol)
         size_t fieldOffset = alignUp(currentOffset, fieldAlignment);
 
         metadata.offset = fieldOffset;
-        util.fieldMap[fieldName] = metadata;
+        (*fieldMap)[fieldName] = metadata;
 
         currentOffset = fieldOffset + fieldSize;
         return true;

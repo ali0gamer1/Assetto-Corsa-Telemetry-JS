@@ -42,9 +42,14 @@ using StructFieldMap = std::unordered_map<std::string, FieldMetadata>;
 
 struct UtilStruct
 {
-    void* hMapFile = nullptr;
+    void* graphicHmap = nullptr;
+    void* staticHmap = nullptr;
+    void* physicsHmap = nullptr;
+    
     void* physics = nullptr;
-    StructFieldMap fieldMap;
+    void* staticPtr = nullptr;
+    StructFieldMap physicsFieldMap;
+    StructFieldMap staticFieldMap;
 };
 
 inline UtilStruct util;
