@@ -89,7 +89,7 @@ void processStruct(const cppast::CppCompound &compoundSymbol)
     }
 
 
-    std::cout << "Found the struct: " << compoundSymbol.name() << "\n";
+    //std::cout << "Found the struct: " << compoundSymbol.name() << "\n";
 
     util.fieldMap.clear();
     size_t currentOffset = 0;
