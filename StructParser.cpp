@@ -6,24 +6,22 @@
 #include <memory>
 #include <sstream>
 #include <cctype>
-
-// Include the public headers from the satya-das/cppparser library
 #include "cppparser/cppparser.h"
 
-// -----------------------------------------------------------------------------
-// Metadata Data Structures
-// -----------------------------------------------------------------------------
 
-struct TypeInfo {
+
+struct TypeInfo
+{
     std::string name;
     size_t baseSize = 0;
     std::vector<size_t> dimensions;
-
-    size_t getTotalSize() const {
-        if (dimensions.empty()) {
+    
+    size_t getTotalSize() const
+    {
+        if (dimensions.empty())
             return baseSize;
-        }
-
+        
+        
         size_t totalElements = 1;
         for (size_t dim : dimensions) {
             totalElements *= dim;
@@ -31,23 +29,25 @@ struct TypeInfo {
         return baseSize * totalElements;
     }
 
-    std::string getTypeString() const {
+    std::string getTypeString() const 
+    {
         std::string result = name;
         for (size_t dim : dimensions) {
             result += "[" + std::to_string(dim) + "]";
         }
         return result;
     }
+
 };
+
 
 struct FieldMetadata {
     TypeInfo typeData;
     size_t offset = 0;
 };
 
-// -----------------------------------------------------------------------------
-// Helper Functions
-// -----------------------------------------------------------------------------
+
+
 
 size_t getPrimitiveTypeSize(const std::string& typeName) {
     static const std::unordered_map<std::string, size_t> typeSizes = {
@@ -66,8 +66,9 @@ size_t getPrimitiveTypeSize(const std::string& typeName) {
     };
 
     auto it = typeSizes.find(typeName);
-    return (it != typeSizes.end()) ? it->second : 0;
+    return (it != typeSizes.end()) ? it->second : 0; //get value or 0
 }
+
 
 size_t getTypeAlignment(const std::string& typeName) {
     auto size = getPrimitiveTypeSize(typeName);
@@ -77,6 +78,7 @@ size_t getTypeAlignment(const std::string& typeName) {
     return size >= 8 ? 8 : size;
 }
 
+
 size_t alignUp(size_t value, size_t alignment) {
     if (alignment <= 1) {
         return value;
@@ -84,7 +86,7 @@ size_t alignUp(size_t value, size_t alignment) {
     return ((value + alignment - 1) / alignment) * alignment;
 }
 
-// Extract base type and array dimensions from the parser AST
+
 static size_t extractArraySize(const cppast::CppExpression& expr) {
     if (expr.expressionType() != cppast::CppExpressionType::ATOMIC) {
         return 0;
@@ -102,6 +104,8 @@ static size_t extractArraySize(const cppast::CppExpression& expr) {
     return stream.fail() ? 0 : value;
 }
 
+
+
 TypeInfo parseType(const cppast::CppVar& var) {
     TypeInfo info;
     info.name = var.varType().baseType();
@@ -116,29 +120,31 @@ TypeInfo parseType(const cppast::CppVar& var) {
         if (dimValue > 0) {
             info.dimensions.push_back(dimValue);
         } else {
-            info.dimensions.push_back(1);
+            info.dimensions.push_back(1); // reinforcement code added by AI
         }
     }
 
     return info;
 }
 
-// -----------------------------------------------------------------------------
-// AST Visitor / Inspector
-// -----------------------------------------------------------------------------
 
-void processStruct(const cppast::CppCompound& compoundSymbol) {
+
+void processStruct(const cppast::CppCompound &compoundSymbol)
+{
     if (compoundSymbol.compoundType() != cppast::CppCompoundType::STRUCT &&
         compoundSymbol.compoundType() != cppast::CppCompoundType::CLASS) {
         return;
     }
+
 
     std::cout << "Found the struct: " << compoundSymbol.name() << "\n";
 
     std::unordered_map<std::string, FieldMetadata> fieldsMetadata;
     size_t currentOffset = 0;
 
-    compoundSymbol.visitAll([&](const cppast::CppEntity& entity) {
+    compoundSymbol.visitAll(
+    [&](const cppast::CppEntity& entity) 
+    {
         if (entity.entityType() != cppast::CppEntityType::VAR) {
             return true;
         }
@@ -170,7 +176,11 @@ void processStruct(const cppast::CppCompound& compoundSymbol) {
                   << "offset: " << meta.offset << " }\n";
     }
     std::cout << "}\n\n";
+
+
 }
+
+
 
 void traverseAST(const cppast::CppCompound& program) {
     program.visitAll([&](const cppast::CppEntity& entity) {
