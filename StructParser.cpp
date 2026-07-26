@@ -120,14 +120,7 @@ void processStruct(const cppast::CppCompound &compoundSymbol)
         return true;
     });
 
-    std::cout << "{\n";
-    for (const auto& [name, meta] : util.fieldMap) {
-        std::cout << "  \"" << name << "\": { "
-                  << "type: \"" << meta.typeData.getTypeString() << "\", "
-                  << "size: " << meta.typeData.getTotalSize() << " bytes, "
-                  << "offset: " << meta.offset << " }\n";
-    }
-    std::cout << "}\n\n";
+    
 
 
 }
